@@ -71,12 +71,24 @@ def main():
         totalDictOfKeywords.update({line.rstrip("\n"): 0})
     keywordsFile.close()
 
+    # Create a csv file for each keyword
+    keywords = dictOfKeywords.keys()
+    for key in keywords:
+        try:
+            with open('./output/' + str(key) + '.csv', mode='w') as keywordCSV:
+                writer = csv.writer(keywordCSV)
+                writer.writerow(['Year', 'Page', 'Context: ' + str(key)])
+                keywordCSV.close()
+        except Exception as e:
+            print("ERROR: " + str(e) + ". Check keywords file and retry.")
+            sys.exit(1)
+
     # Write the csv descriptors (i.e. year and keyword) to the first row
     with open('./output/data.csv', mode='w') as csv_file:
-        fieldnames = list(dictOfKeywords.keys())  # convert the dict descriptors into a list
-        fieldnames.insert(0, "Year")  # manually insert 'year' into 0,0 as it is not in the dict
+        fieldNames = list(dictOfKeywords.keys())  # convert the dict descriptors into a list
+        fieldNames.insert(0, "Year")  # manually insert 'year' into 0,0 as it is not in the dict
         writer = csv.writer(csv_file)
-        writer.writerow(fieldnames)
+        writer.writerow(fieldNames)
         csv_file.close()
 
     # Open each pdf in a for loop
@@ -88,29 +100,44 @@ def main():
             sys.exit(1)
 
         numOfPages = pdfInput.getNumPages()  # Get number of pages in open pdf
-        pdfText = ""  # Set the pdf text to empty
 
-        # Extract all the text in the pdf into one string (O(n) optimization)
+        # Check for hits page by page
         for j in range(numOfPages):
             currentPage = pdfInput.getPage(j)
-            allText = currentPage.extractText()  # Extract text on current page into string
-            pdfText += allText  # Add current page text to pdfText
-
-        # Strip punctuation and numbers from text
-        pdfText = re.sub(r'[.,#!$%/^&*;:\[\]{}=_`~()\\]|\d+', ' ', pdfText)
-
-        # Format the text into all lowercase
-        pdfText = pdfText.lower()
-
-        # Iterate through each keyword
-        for k in dictOfKeywords:
-            foundWords = re.findall(r'\b' + k + r'\b', pdfText)  # Find the keyword in the text
-            numOfFoundWords = len(foundWords)
-            if numOfFoundWords != 0:  # Only update the dict if there are keywords
-                valueOfKey = int(dictOfKeywords.get(k)) + numOfFoundWords
-                dictOfKeywords.update({k: valueOfKey})
-                valueOfLongTermKey = int(totalDictOfKeywords.get(k)) + numOfFoundWords
-                totalDictOfKeywords.update({k: valueOfLongTermKey})
+            # Extract text on current page into string
+            allText = currentPage.extractText()
+            # Strip punctuation and numbers from text
+            allText = re.sub(r'[.,#!$%/^&*;:\[\]{}=_`~()\\]|\d+|\n', ' ', allText)
+            # Format the text into all lowercase
+            allText = allText.lower()
+            # Iterate through each keyword
+            for k in dictOfKeywords:
+                foundWords = re.findall(r'\b' + k + r'\b', allText)  # Find the keyword in the text
+                numOfFoundWords = len(foundWords)
+                if numOfFoundWords != 0:  # Only update the dict if there are keywords
+                    valueOfKey = int(dictOfKeywords.get(k)) + numOfFoundWords
+                    dictOfKeywords.update({k: valueOfKey})
+                    valueOfLongTermKey = int(totalDictOfKeywords.get(k)) + numOfFoundWords
+                    totalDictOfKeywords.update({k: valueOfLongTermKey})
+                    # Write reference data for each keyword while we are checking for it
+                    with open('./output/' + str(k) + '.csv', mode='a') as keywordCSV:
+                        writer = csv.writer(keywordCSV)
+                        # Hacky BS as above regex will count words with a hyphen even if it shouldn't
+                        # e.g. hockey-stick will count as hockey
+                        # TODO: bring this up on my next email
+                        if k.find('-') == -1:  # If the keyword is unhyphenated, remove hyphens from text
+                            allText = re.split('-| ', allText)
+                        else:  # If not, just split it into a list based on whitespace
+                            allText = allText.split()
+                        # Iterate over each word in the list
+                        for m in range(len(allText)):
+                            if allText[m] == k:  # Check if current iteration matches keyword
+                                preKeyword = allText[(m-10):m]  # Extract 10 words before hit
+                                postKeyword = allText[m:(m+10)]  # Extract hit and 10 words after
+                                snippet = preKeyword + postKeyword  # concat the context
+                                formattedContext = ' '.join([str(i) for i in snippet])  # Cast from list -> str
+                                writer.writerow([i, j, formattedContext])
+                        keywordCSV.close()
 
         # Write the findings to the CSV file
         with open('./output/data.csv', mode='a') as csv_file:
