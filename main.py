@@ -48,7 +48,7 @@ def main():
         try:
             remove(files)
         except OSError as e:
-            print("ERROR: " + e.strerror + " in: " + files)
+            print("ERROR: " + str(e) + " in: " + files)
 
     # Get a list of files in the pdf directory
     pdfsInDirectory = [f for f in listdir("./pdfs") if isfile(join("./pdfs", f))]
@@ -70,6 +70,8 @@ def main():
         dictOfKeywords.update({line.rstrip("\n"): 0})
         totalDictOfKeywords.update({line.rstrip("\n"): 0})
     keywordsFile.close()
+    # Clear unneeded vars from memory
+    del line
 
     # Create a csv file for each keyword
     keywords = dictOfKeywords.keys()
@@ -82,6 +84,9 @@ def main():
         except Exception as e:
             print("ERROR: " + str(e) + ". Check keywords file and retry.")
             sys.exit(1)
+    # Clear unneeded vars from memory
+    del key
+    del keywords
 
     # Write the csv descriptors (i.e. year and keyword) to the first row
     with open('./output/data.csv', mode='w') as csv_file:
@@ -112,7 +117,15 @@ def main():
             allText = allText.lower()
             # Iterate through each keyword
             for k in dictOfKeywords:
-                foundWords = re.findall(r'\b' + k + r'\b', allText)  # Find the keyword in the text
+                try:
+                    foundWords = re.findall(r'\s' + k + r'\s', allText)  # Find the keyword in the text
+                    #foundWords = re.findall(r'^' + k + r'$', allText)
+                    #numOfFoundWords = allText.count(k)
+                except Exception as e:
+                    print("ERROR: " + str(e) + " in file: " + str(i) +
+                          " with keyword: " + str(k) + " on page: " + str(j) +
+                          " on word: " + str(l))
+                    sys.exit(1)
                 numOfFoundWords = len(foundWords)
                 if numOfFoundWords != 0:  # Only update the dict if there are keywords
                     valueOfKey = int(dictOfKeywords.get(k)) + numOfFoundWords
@@ -124,17 +137,21 @@ def main():
                         writer = csv.writer(keywordCSV)
                         # Hacky BS as above regex will count words with a hyphen even if it shouldn't
                         # e.g. hockey-stick will count as hockey
-                        # TODO: bring this up on my next email
+                        # TODO: bring this up in my next email
                         if k.find('-') == -1:  # If the keyword is unhyphenated, remove hyphens from text
-                            allText = re.split('-| ', allText)
+                            allTextFiltered = re.split('[- ]', allText)
                         else:  # If not, just split it into a list based on whitespace
-                            allText = allText.split()
+                            allTextFiltered = allText.split()
                         # Iterate over each word in the list
-                        for m in range(len(allText)):
-                            if allText[m] == k:  # Check if current iteration matches keyword
-                                preKeyword = allText[(m-10):m]  # Extract 10 words before hit
-                                postKeyword = allText[m:(m+10)]  # Extract hit and 10 words after
+                        for l in range(len(allTextFiltered)):
+                            if allTextFiltered[l] == k:  # Check if current iteration matches keyword
+                                preKeyword = allTextFiltered[(l - 15):l]  # Extract 10 words before hit
+                                postKeyword = allTextFiltered[l:(l + 15)]  # Extract hit and 10 words after
                                 snippet = preKeyword + postKeyword  # concat the context
+                                # Remove whitespace indices from context list
+                                for m in range(len(snippet)):
+                                    if snippet[m].isspace():
+                                        snippet.pop(m)
                                 formattedContext = ' '.join([str(i) for i in snippet])  # Cast from list -> str
                                 writer.writerow([i, j, formattedContext])
                         keywordCSV.close()
