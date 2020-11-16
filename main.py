@@ -1,7 +1,8 @@
 #
 # Script to batch parse PDF input files and generate data analytics based on some input
 # DEPS: matplotlib, PyPDF2
-# 2019-07-05
+# v. 1.x: 2019-07-05
+# v. 2.0: 2020-11-15
 # Contact: TomokoK @ Github
 #
 
