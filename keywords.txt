@@ -1,46 +1,25 @@
-lacrosse
-hockey
-cricket
+athletics
 base-ball
 baseball
-base ball
-soft-ball
-softball
-soft ball
-soccer
 basket-ball
-basket ball
 basketball
-swim-ming
-swimming
-foot-ball
-football
-foot ball
-track
-field
-track and field
-skating
-racing
-dumb-bell
-croquet
-athletics
-racing
-croquet
-foot-racing
-foot racing
-footracing
-snow-shoeing
-snow shoeing
-snowshoeing
-military-drill
-military drill
-calisthenics
 cadet
-long-jump
-long jump
-longjump
-high-jump
-high jump
-highjump
-field day
+calisthenics
+cricket
+croquet
+dumb-bell
+field
 field-day
+foot-ball
+foot-racing
+football
+hockey
+lacrosse
+racing
+skating
+snow-shoeing
+snowshoeing
+soccer
+softball
+swimming
+track
