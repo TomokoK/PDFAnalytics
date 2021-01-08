@@ -1,6 +1,7 @@
 athletics
 base-ball
 baseball
+base ball
 basket-ball
 basketball
 cadet

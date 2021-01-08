@@ -44,7 +44,7 @@ def main():
     print("1...")
     time.sleep(1)
     print("Deleting files...")
-    outputFiles = glob.glob('./output/*', recursive=True)
+    outputFiles = glob.glob('./output/[!.gitignore]*', recursive=True)
     for files in outputFiles:
         try:
             remove(files)
