@@ -6,6 +6,8 @@
 # Contact: TomokoK @ Github
 #
 
+# TODO: BUG - csv files with spaces are not being written to
+
 
 from PyPDF2 import PdfFileReader
 from os.path import isfile, join
@@ -136,13 +138,37 @@ def main():
                     # Write reference data for each keyword while we are checking for it
                     with open('./output/' + str(k) + '.csv', mode='a') as keywordCSV:
                         writer = csv.writer(keywordCSV)
-                        # Hacky BS as above regex will count words with a hyphen even if it shouldn't
+                        # Limitation of punct. filtering means hyphen words are sometimes counted
                         # e.g. hockey-stick will count as hockey
                         # TODO: bring this up in my next email
-                        if k.find('-') == -1:  # If the keyword is unhyphenated, remove hyphens from text
+                        if k.find(' ') != -1 and k.find('-') == -1: # Check if keyword has spaces AND no hyphens
+                            # NOTE: Words that continue onto the next page will not be picked up here
+                            allTextFiltered = re.split('[- ]', allText) # Split extracted text based on space/hyphen
+                            matchedK = k.split() # Split our keyword based on whitespace
+                            # Only iterate within allTextFiltered bounds
+                            # Check if allTextFiltered contains our k sequence. If it does, change the first found index
+                            # to the whole word (k), then remove the every other index to remove word repetition
+                            for l in range(len(allTextFiltered) - len(matchedK)):
+                                for m in range(len(matchedK)):
+                                    if allTextFiltered[l + m] == matchedK[m]:
+                                        match = True
+                                        startIndex = l
+                                    else:
+                                        match = False
+                                        break
+                                if match == True:
+                                    allTextFiltered[startIndex] = str(k)
+                                    flaggedIndicies = []
+                                    for m in range(1, len(matchedK)):
+                                        # Flag every index after allTextFiltered entry point within k bounds
+                                        flaggedIndicies.append(startIndex + m)
+                                        for n in sorted(flaggedIndicies, reverse=True):
+                                            del allTextFiltered[n]
+                        elif k.find('-') == -1:  # If the keyword is unhyphenated, remove hyphens from text
                             allTextFiltered = re.split('[- ]', allText)
                         else:  # If not, just split it into a list based on whitespace
                             allTextFiltered = allText.split()
+                        # Concat keywords with spaces
                         # Iterate over each word in the list
                         for l in range(len(allTextFiltered)):
                             if allTextFiltered[l] == k:  # Check if current iteration matches keyword
